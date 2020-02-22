@@ -1,0 +1,1 @@
+Welcome to the Windows Spotlight Capture project! This is my first commit to my GitHub repository.
