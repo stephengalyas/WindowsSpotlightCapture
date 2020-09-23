@@ -23,92 +23,85 @@ namespace WindowsSpotlightCapture.Objects
         /// <summary>
         /// Returns true if the application data directory does not exist for this user.
         /// </summary>
-        internal static bool IsFirstLaunch { get { return !Directory.Exists(AppDataDirectory); } }
+        internal static bool IsFirstLaunch { get { return Windows.Storage.ApplicationData.Current.LocalSettings.Values["installInfo"] == null; } }      // If no settings have been saved, then this is the first launch.
         /// <summary>
-        /// The application directory.
+        /// The directory in the My Pictures directory that is used to store selected Windows Spotlight photos.
         /// </summary>
-        internal static string AppDataDirectory { get { return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\WindowsSpotlightCapture\"; } }
-        /// <summary>
-        /// App trace listener name.
-        /// </summary>
-        private static string TraceListenerName { get { return "WSPTracer"; } }
+        internal static StorageFolder SavedPhotosDirectory {  get { return StorageFolder.GetFolderFromPathAsync(Windows.Storage.KnownFolders.PicturesLibrary.Path + @"\WindowsSpotlight\").GetResults(); } }
         /// <summary>
         /// Initializes the program.
         /// </summary>
         /// <param name="error">(out) The error message.</param>
         /// <returns>True if successful, otherwise false.</returns>
-        internal static async Task<bool> Initalize()
+        internal static async Task<Tuple<bool,string>> Initalize()
         {
             bool success = true;
-            string error = string.Empty;
-            StorageFolder sf;
-            Task<StorageFile> tskCreateFile = null;
+            string error = String.Empty;
             if (IsFirstLaunch)
             {  
-                // Create application directory.
+                // Create folder in pictures directory.
                 try
                 {
-                    Directory.CreateDirectory(AppDataDirectory);
+                    await Windows.Storage.KnownFolders.PicturesLibrary.CreateFolderAsync("WindowsSpotlight", CreationCollisionOption.OpenIfExists);   // Tries to create the Windows Spotlight folder. If it already exists, does nothing.
                 }
                 catch (Exception exc)
                 {
                     success = false;
-                    error = "We had a problem setting up this program for first use.\n\n" + (exc.GetType()).Name + " - " + exc.Message;
+                    error = "We were unable to create the folder that will be used to store your selected files\n\n" + (exc.GetType()).Name + " - " + exc.Message;
                 }
 
-                if(!success)
+                if (!success)
                 {
-                    return success;
+                    return new Tuple<bool, string>(success, error);
                 }
 
-                // Create app data directory.
-                sf = await StorageFolder.GetFolderFromPathAsync(Configuration.AppDataDirectory);
+                if(success)
+                {
+                    // Save installation data.
+                    Windows.Storage.ApplicationDataCompositeValue installInfo = new ApplicationDataCompositeValue();
+                    installInfo["installed"] = true;
+                    installInfo["installDate"] = DateTime.Now;
+                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["installInfo"] = installInfo;
+                }
 
-                // Create file asynchronously.
-                tskCreateFile = sf.CreateFileAsync("asyncfile.txt").AsTask<StorageFile>();
-
-                // Initalize tracer.
-                success = InitalizeTracer(out error);
-
-                // Wait for file to be created.
-                await tskCreateFile;
             }
-            return success;
+            return new Tuple<bool, string>(success, error);
         }
         /// <summary>
         /// Creates a trace listener for this application.
         /// </summary>
         /// <param name="error">(out) If fail, the error message.</param>
         /// <returns>True if successful, otherwise false.</returns>
-        private static bool InitalizeTracer(out string error)
-        {
-            bool success = true;
-            bool exists = false;
-            error = string.Empty;
-            foreach (TraceListener tl in Trace.Listeners)
-            {
-                if(tl.Name == Configuration.TraceListenerName)
-                {
-                    exists = true;
-                    break;
-                }
-            }
-
-            if (!exists)
-            {
-                try
-                {
-                    Trace.Listeners.Add(new TextWriterTraceListener(Configuration.TraceListenerName));
-                }
-                catch (Exception exc)
-                {
-                    success = false;
-                    error = "We had a problem with our logging feature.\n\n" + (exc.GetType()).Name + " - " + exc.Message;
-                }
-            }
-
-            return success;
-        }   // Close InitializeTracer().
+        //private static bool InitalizeTracer(out string error)
+        //{
+        //    bool success = true;
+        //    bool exists = false;
+        //    error = string.Empty;
+        //    foreach (TraceListener tl in Trace.Listeners)
+        //    {
+        //        if(tl.Name == Configuration.TraceListenerName)
+        //        {
+        //            exists = true;
+        //            break;
+        //        }
+        //    }
+        //
+        //    if (!exists)
+        //    {
+        //        try
+        //        {
+        //
+        //            Trace.Listeners.Add(new TextWriterTraceListener(Configuration.TraceListenerPath, Configuration.TraceListenerName));
+        //        }
+        //        catch (Exception exc)
+        //        {
+        //            success = false;
+        //            error = "We had a problem with our logging feature.\n\n" + (exc.GetType()).Name + " - " + exc.Message;
+        //        }
+        //    }
+        //
+        //    return success;
+        //}   // Close InitializeTracer().
 
     }
 }
