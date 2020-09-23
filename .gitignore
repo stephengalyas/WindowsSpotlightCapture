@@ -3,3 +3,5 @@ bin/
 obj/
 *.csproj
 *.csproj.user
+Notes.txt
+Config.txt
