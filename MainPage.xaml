@@ -9,6 +9,15 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
-
+        <NavigationView x:Name="navMain" SelectionChanged="nvMain_SelectionChanged" PaneTitle="Main Menu" PaneDisplayMode="Auto">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Name="nviWindowsSpotlight" Content="Windows Spotlight" Tag="WSContent" Icon="Pictures"></NavigationViewItem>
+                <NavigationViewItem Name="nviLocalPhotos" Content="Saved Photos" Tag="SavedPhotos" Icon="Pictures"></NavigationViewItem>
+            </NavigationView.MenuItems>
+            <ScrollViewer Name="svMain">
+                <Frame Name="svMainFrame">
+                </Frame>
+            </ScrollViewer>
+        </NavigationView>
     </Grid>
 </Page>
