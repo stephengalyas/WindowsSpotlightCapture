@@ -44,5 +44,30 @@ namespace WindowsSpotlightCapture
             IAsyncOperation<IUICommand> uiAction = md.ShowAsync();
             
         }
-    }   
+
+        /// <summary>
+        /// User selected a menu item.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void nvMain_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs e)
+        {
+            switch (e.SelectedItemContainer.Tag.ToString())
+            {
+                case "WSContent":
+                    {
+                        // Load Windows Spotlight page.
+                        svMainFrame.Navigate(typeof(WSCapture), e.RecommendedNavigationTransitionInfo);
+                        break;
+                    }
+                case "SavedPhotos":
+                    {
+                        // Load Local Photos page.
+                        svMainFrame.Navigate(typeof(SavedPhotos), e.RecommendedNavigationTransitionInfo);
+                        break;
+                    }
+            }   // Close switch.
+
+        }
+    }
 }
