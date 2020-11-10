@@ -44,5 +44,5 @@ namespace WindowsSpotlightCapture
             IAsyncOperation<IUICommand> uiAction = md.ShowAsync();
             
         }
-    }
+    }   
 }

@@ -29,6 +29,10 @@ namespace WindowsSpotlightCapture.Objects
         /// </summary>
         internal static StorageFolder SavedPhotosDirectory {  get { return StorageFolder.GetFolderFromPathAsync(Windows.Storage.KnownFolders.PicturesLibrary.Path + @"\WindowsSpotlight\").GetResults(); } }
         /// <summary>
+        /// The directory used to store Windows Spotlight photos.
+        /// </summary>
+        internal static StorageFolder WindowsSpotlightDirectory { get { return StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\").GetResults(); } }
+        /// <summary>
         /// Initializes the program.
         /// </summary>
         /// <param name="error">(out) The error message.</param>
