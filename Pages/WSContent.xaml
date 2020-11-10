@@ -1,0 +1,59 @@
+﻿<Page
+    x:Class="WindowsSpotlightCapture.Pages.WSContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WindowsSpotlightCapture.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <!-- For buttons -->
+            <ColumnDefinition Width="10*" />
+            <!-- For main content -->
+            <ColumnDefinition Width="1*" />
+            <!-- For buttons -->
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <!-- Top label -->
+            <RowDefinition Height="3*" />
+            <!-- Picture viewer -->
+            <RowDefinition Height="15*" />
+            <!-- Picture viewer commands -->
+            <RowDefinition Height="3*" />
+            <!-- Footer controls -->
+            <RowDefinition Height="3*" />
+        </Grid.RowDefinitions>
+        <TextBlock Name="tbHeader" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Text="Windows Spotlight Photos" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="42" />
+        <Button Name="btnPrev" Grid.Row="1" Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="80" Height="80" CornerRadius="100" Margin="0,0,10,10" ToolTipService.ToolTip="View previous photo" Click="btnPrev_Click">
+            <SymbolIcon Symbol="Back"/>
+        </Button>
+        <Image Name="imgViewer" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Button Name="btnNext" Grid.Row="1" Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="80" Height="80" CornerRadius="100" Margin="10,0,0,10" ToolTipService.ToolTip="View next photo" Click="btnNext_Click">
+            <SymbolIcon Symbol="Next"/>
+        </Button>
+        <Grid Grid.Row="2" Grid.Column="1">
+            <!-- Inner grid for image controls, column widths will be percentages-->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.33*"/>
+                <ColumnDefinition Width="0.34*"/>
+                <ColumnDefinition Width="0.33*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Button Name="btnOpen" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Open image in Photos app" Click="btnOpen_Click">
+                <SymbolIcon Symbol="OpenLocal"/>
+            </Button>
+            <Button Name="btnSave" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Save image" Click="btnSave_Click">
+                <SymbolIcon Symbol="Save"></SymbolIcon>
+            </Button>
+            <Button Name="btnShare" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Share image" Click="btnShare_Click">
+                <SymbolIcon Symbol="Share" />
+            </Button>
+        </Grid>
+    </Grid>
+</Page>
