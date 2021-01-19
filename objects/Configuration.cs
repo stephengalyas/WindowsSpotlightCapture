@@ -23,89 +23,62 @@ namespace WindowsSpotlightCapture.Objects
         /// <summary>
         /// Returns true if the application data directory does not exist for this user.
         /// </summary>
-        internal static bool IsFirstLaunch { get { return Windows.Storage.ApplicationData.Current.LocalSettings.Values["installInfo"] == null; } }      // If no settings have been saved, then this is the first launch.
+        internal static bool IsFirstLaunch { get { return Windows.Storage.ApplicationData.Current.LocalSettings.Values.Count == 0; } }      // If no settings have been saved, then this is the first launch.
         /// <summary>
-        /// The directory in the My Pictures directory that is used to store selected Windows Spotlight photos.
+        /// The Windows Spotlight directory.
         /// </summary>
-        internal static StorageFolder SavedPhotosDirectory {  get { return StorageFolder.GetFolderFromPathAsync(Windows.Storage.KnownFolders.PicturesLibrary.Path + @"\WindowsSpotlight\").GetResults(); } }
-        /// <summary>
-        /// The directory used to store Windows Spotlight photos.
-        /// </summary>
-        internal static StorageFolder WindowsSpotlightDirectory { get { return StorageFolder.GetFolderFromPathAsync(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + @"\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\").GetResults(); } }
+        internal static string WindowsSpotlightDirectory { get { return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\AppData\Local\Packages\Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy\LocalState\Assets\"; } }
+
         /// <summary>
         /// Initializes the program.
         /// </summary>
         /// <param name="error">(out) The error message.</param>
         /// <returns>True if successful, otherwise false.</returns>
-        internal static async Task<Tuple<bool,string>> Initalize()
+        internal static async Task<Tuple<bool, string>> Initalize()
         {
             bool success = true;
             string error = String.Empty;
-            if (IsFirstLaunch)
-            {  
-                // Create folder in pictures directory.
-                try
-                {
-                    await Windows.Storage.KnownFolders.PicturesLibrary.CreateFolderAsync("WindowsSpotlight", CreationCollisionOption.OpenIfExists);   // Tries to create the Windows Spotlight folder. If it already exists, does nothing.
-                }
-                catch (Exception exc)
-                {
-                    success = false;
-                    error = "We were unable to create the folder that will be used to store your selected files\n\n" + (exc.GetType()).Name + " - " + exc.Message;
-                }
 
-                if (!success)
-                {
-                    return new Tuple<bool, string>(success, error);
-                }
-
-                if(success)
-                {
-                    // Save installation data.
-                    Windows.Storage.ApplicationDataCompositeValue installInfo = new ApplicationDataCompositeValue();
-                    installInfo["installed"] = true;
-                    installInfo["installDate"] = DateTime.Now;
-                    Windows.Storage.ApplicationData.Current.LocalSettings.Values["installInfo"] = installInfo;
-                }
-
+            if (!success)
+            {
+                return new Tuple<bool, string>(success, error);
             }
+
+            // Set application settings defaults.
+            if (Windows.Storage.ApplicationData.Current.LocalSettings.Values["installDate"] == null) { Windows.Storage.ApplicationData.Current.LocalSettings.Values["installDate"] = DateTime.Now.ToString(); }
+            if (Windows.Storage.ApplicationData.Current.LocalSettings.Values["lastOpened"] == null) { Windows.Storage.ApplicationData.Current.LocalSettings.Values["lastOpened"] = DateTime.Now.ToString(); }
+            if (Windows.Storage.ApplicationData.Current.LocalSettings.Values["saveDir"] == null) { Windows.Storage.ApplicationData.Current.LocalSettings.Values["saveDir"] = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Pictures\WindowsSpotlight\"; }
+            ApplicationDataCompositeValue adcvLogging = Windows.Storage.ApplicationData.Current.LocalSettings.Values["logging"] == null ? new ApplicationDataCompositeValue() : ApplicationData.Current.LocalSettings.Values["logging"] as ApplicationDataCompositeValue;
+            if (adcvLogging["enabled"] == null) { adcvLogging["enabled"] = false; }
+            if (adcvLogging["level"] == null || String.IsNullOrWhiteSpace((string)adcvLogging["level"])) { adcvLogging["level"] = Enum.GetName(typeof(Windows.Foundation.Diagnostics.LoggingLevel), Windows.Foundation.Diagnostics.LoggingLevel.Verbose); }
+            if (adcvLogging["loggingDir"] == null) { adcvLogging["loggingDir"] = ApplicationData.Current.TemporaryFolder.Path; }
+            ApplicationData.Current.LocalSettings.Values["logging"] = adcvLogging;
+
+            // Create folder in default location.
+            try
+            {
+                if (!Directory.Exists((string)ApplicationData.Current.LocalSettings.Values["saveDir"]))
+                {
+                    string parentDir = string.Empty;
+                    string[] splitDir = ((string)ApplicationData.Current.LocalSettings.Values["saveDir"]).Trim().Split(@"\", StringSplitOptions.RemoveEmptyEntries);
+                    for (int i=0; i<Math.Max(splitDir.Length - 1, 1); i++)  // If parent directory is root of drive, length - 1 = 0 so use Math.Max to make sure loop iterates at least one..
+                    {
+                        parentDir += (splitDir[i] + @"\");
+                    }
+                    StorageFolder sfSaveLoc = await StorageFolder.GetFolderFromPathAsync(parentDir);
+                    await sfSaveLoc.CreateFolderAsync(splitDir[splitDir.Length - 1], CreationCollisionOption.OpenIfExists);
+                }
+            }
+            catch (Exception exc)
+            {
+                success = false;
+                ApplicationData.Current.LocalSettings.Values["saveDir"] = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + @"\Pictures\WindowsSpotlight\";
+                error = "We were unable to create the folder that will be used to store your selected files. The default folder will be used.\n\n" + (exc.GetType()).Name + " - " + exc.Message;
+            }
+
+            LogHandler.Initalize();
+            LogHandler.Write("Finished initializing program", Windows.Foundation.Diagnostics.LoggingLevel.Verbose, System.Reflection.MethodBase.GetCurrentMethod());
             return new Tuple<bool, string>(success, error);
         }
-        /// <summary>
-        /// Creates a trace listener for this application.
-        /// </summary>
-        /// <param name="error">(out) If fail, the error message.</param>
-        /// <returns>True if successful, otherwise false.</returns>
-        //private static bool InitalizeTracer(out string error)
-        //{
-        //    bool success = true;
-        //    bool exists = false;
-        //    error = string.Empty;
-        //    foreach (TraceListener tl in Trace.Listeners)
-        //    {
-        //        if(tl.Name == Configuration.TraceListenerName)
-        //        {
-        //            exists = true;
-        //            break;
-        //        }
-        //    }
-        //
-        //    if (!exists)
-        //    {
-        //        try
-        //        {
-        //
-        //            Trace.Listeners.Add(new TextWriterTraceListener(Configuration.TraceListenerPath, Configuration.TraceListenerName));
-        //        }
-        //        catch (Exception exc)
-        //        {
-        //            success = false;
-        //            error = "We had a problem with our logging feature.\n\n" + (exc.GetType()).Name + " - " + exc.Message;
-        //        }
-        //    }
-        //
-        //    return success;
-        //}   // Close InitializeTracer().
-
     }
 }

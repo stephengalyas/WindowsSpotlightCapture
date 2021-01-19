@@ -29,45 +29,78 @@ namespace WindowsSpotlightCapture
         public MainPage()
         {
             this.InitializeComponent();
-            MessageDialog md;
-            
-            if (Configuration.IsFirstLaunch)
-            {
-                md = new MessageDialog("This is the first time you have launched this app!", "First Launch");
-            }
-            else
-            {
-                md = new MessageDialog("This is not the first time you have launched this app!", "Not First Launch");
-            }
-
-            Task<bool> tskInitialize = Configuration.Initalize();
-            IAsyncOperation<IUICommand> uiAction = md.ShowAsync();
-            
         }
 
         /// <summary>
         /// User selected a menu item.
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
         private void nvMain_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs e)
         {
-            switch (e.SelectedItemContainer.Tag.ToString())
+            if (e.SelectedItemContainer.Tag != null)
             {
-                case "WSContent":
-                    {
-                        // Load Windows Spotlight page.
-                        svMainFrame.Navigate(typeof(WSCapture), e.RecommendedNavigationTransitionInfo);
-                        break;
-                    }
-                case "SavedPhotos":
-                    {
-                        // Load Local Photos page.
-                        svMainFrame.Navigate(typeof(SavedPhotos), e.RecommendedNavigationTransitionInfo);
-                        break;
-                    }
-            }   // Close switch.
+                switch (e.SelectedItemContainer.Tag.ToString())
+                {
+                    case "WSContent":
+                        {
+                            // Load Windows Spotlight page.
+                            svMainFrame.Navigate(typeof(Pages.WSContent), e.RecommendedNavigationTransitionInfo);
+                            break;
+                        }
+                    case "SavedPhotos":
+                        {
+                            // Load Local Photos page.
+                            svMainFrame.Navigate(typeof(Pages.SavedPictures), e.RecommendedNavigationTransitionInfo);
+                            break;
+                        }
+                    case "Settings":
+                        {
+                            // Load Local Photos page.
+                            svMainFrame.Navigate(typeof(Pages.Settings), e.RecommendedNavigationTransitionInfo);
+                            break;
+                        }
+                }   // Close switch.
+            }
+        }
 
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Must call on a separate thread. Otherwise, app hangs on splash screen.
+            Task.Run(() =>
+            {
+                MessageDialog md;
+
+                if (Configuration.IsFirstLaunch)
+                {
+                    md = new MessageDialog("This is the first time you have launched this app!", "First Launch");
+                }
+                else
+                {
+                    md = new MessageDialog("This is not the first time you have launched this app!", "Not First Launch");
+                }
+
+                IAsyncOperation<IUICommand> uiAction = md.ShowAsync();
+                Task<Tuple<bool, string>> tskInitialize = Configuration.Initalize();
+                tskInitialize.Wait();
+                if (tskInitialize.Result.Item1 == false)
+                {
+                    // Error initializing application.
+                    md = new MessageDialog("We could not initialize the program. Please try again.\n\nError message: " + tskInitialize.Result.Item2, "Could Not Initialize Program");
+                    uiAction = md.ShowAsync();
+                    Windows.ApplicationModel.Core.CoreApplication.Exit();   // Exit the app.
+                }
+            });
+        }
+
+        /// <summary>
+        /// Handles invocation of Settings button.
+        /// </summary>
+        private void nvMain_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+        {
+            if(args.IsSettingsInvoked)
+            {
+                // Load Local Photos page.
+                svMainFrame.Navigate(typeof(Pages.Settings));
+            }
         }
     }
 }

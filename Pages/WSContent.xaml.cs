@@ -55,35 +55,15 @@ namespace WindowsSpotlightCapture.Pages
         /// The previous image in the list of images.
         /// </summary>
         private Image imgPrev;
-        /// <summary>
-        /// Used to track the progress of loading the next image.
-        /// </summary>
-        private Task tskLoadNextImage;
-        /// <summary>
-        /// Used to track the progress of loading the previous image.
-        /// </summary>
-        private Task tskLoadPrevImage;
-        ///// <summary>
-        ///// Used to store the current active in the list.
-        ///// </summary>
-        //private KeyValuePair<int, Image> activeImage;
-        ///// <summary>
-        ///// Used to store the previous image in the list.
-        ///// </summary>
-        //private KeyValuePair<int, Image> prevImage;
-        ///// <summary>
-        ///// Used to store the next image in the list.
-        ///// </summary>
-        //private KeyValuePair<int, Image> nextImage;
 
         public WSContent()
         {
             this.InitializeComponent();
-            imgPrev = imgNext = null;
-            images = new List<KeyValuePair<int, StorageFile>>();
-            tskLoadNextImage = tskLoadPrevImage = null;
-            currIndex = -1;
+            
+        }
 
+        private void WSContent_Loaded(object sender, RoutedEventArgs e)
+        {
             GetImageUris();
             RefreshImages(Direction.Forward);
         }
@@ -91,14 +71,16 @@ namespace WindowsSpotlightCapture.Pages
         /// <summary>
         /// Gets a list of file paths of Windows Spotlight files.
         /// </summary>
-        /// <returns></returns>
         private async void GetImageUris()
         {
-            IAsyncOperation<IReadOnlyList<IStorageItem>> allFiles = Configuration.WindowsSpotlightDirectory.GetItemsAsync();
+            imgPrev = new Image();
+            imgNext = new Image();
+            images = new List<KeyValuePair<int, StorageFile>>();
+            currIndex = 0;
 
-            // While the system is retrieving files, reset the controls on the form.
-            imgViewer = null;
-
+            // Get all Windows Spotlight items.
+            StorageFolder tskFolder = await StorageFolder.GetFolderFromPathAsync(Configuration.WindowsSpotlightDirectory);
+            IAsyncOperation<IReadOnlyList<IStorageItem>> allFiles = tskFolder.GetItemsAsync();
             await allFiles;
             IReadOnlyList<IStorageItem> imageFiles = allFiles.GetResults();
 
@@ -107,47 +89,48 @@ namespace WindowsSpotlightCapture.Pages
                 return;
             }
 
-            currIndex = -1;
+            currIndex = 0;
+
+            // Copy each Windows Spotlight file (no extension) to the application's temporary directory, appending an image file extension to each file. If the image already exists, catch an exception and move to the next image.
             for (int i=0; i<imageFiles.Count; i++)
             {
-                images.Add(new KeyValuePair<int, StorageFile>(i, StorageFile.GetFileFromPathAsync(imageFiles[i].Path).GetResults()));
+                try
+                {
+                    StorageFile imgFile = await StorageFile.GetFileFromPathAsync(imageFiles[i].Path);
+                    StorageFolder dirTemp = Windows.Storage.ApplicationData.Current.TemporaryFolder;
+                    StorageFile imgNewFile = await dirTemp.CreateFileAsync(imgFile.Name + ".jpg", CreationCollisionOption.OpenIfExists);
+                    await imgFile.CopyAndReplaceAsync(imgNewFile);
+                    images.Add(new KeyValuePair<int, StorageFile>(i, imgNewFile));
+                }
+                catch (Exception) { }
             }
         }
 
         /// <summary>
         /// Refreshes the active, previous, and next images.
         /// </summary>
-        /// <param name="direction"></param>
-        private void RefreshImages(Direction direction)
+        /// <param name="direction">Determines if whether the next image in the sequence or the prior image in the sequence should be loaded.</param>
+        private async void RefreshImages(Direction direction)
         {
             if (images.Count > 0)
             {
                 int newCurrIndex = currIndex;
 
-                // If previous and next images are still being loaded into memory on their threads, wait for these processes to finish.
-                if (tskLoadNextImage != null && !tskLoadNextImage.IsCompleted)
-                {
-                    tskLoadNextImage.Wait();
-                }
-                if (tskLoadPrevImage != null && !tskLoadPrevImage.IsCompleted)
-                {
-                    tskLoadPrevImage.Wait();
-                }
-
                 if (direction == Direction.Forward)
                 {
                     newCurrIndex = (currIndex + 1) % images.Count;
-                    imgViewer = imgNext;
+                    if (imgNext.Source != null) { imgViewer.Source = imgNext.Source; }
                 }
                 else if (direction == Direction.Backward)
                 {
                     newCurrIndex = ((currIndex - 1) + images.Count) % images.Count;
-                    imgViewer = imgPrev;
+                    if (imgPrev.Source != null) { imgViewer.Source = imgPrev.Source; }
                 }
 
-                // Load new previous and next images on separate threads.
-                tskLoadNextImage = Task.Run(() => { LoadImage((newCurrIndex + 1) % images.Count, Direction.Forward); });
-                tskLoadPrevImage = Task.Run(() => { LoadImage(((newCurrIndex - 1) + images.Count) % images.Count, Direction.Backward); });
+                // Load new previous and next images into memory. Use Dispatcher to perform these tasks asynchronously.
+                Windows.UI.Core.CoreDispatcher dispatcher = Windows.UI.Core.CoreWindow.GetForCurrentThread().Dispatcher;
+                await dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => LoadImage((newCurrIndex + 1) % images.Count, Direction.Forward));
+                await dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => LoadImage(((newCurrIndex - 1) + images.Count) % images.Count, Direction.Backward));
 
                 currIndex = newCurrIndex;
             }
@@ -160,78 +143,18 @@ namespace WindowsSpotlightCapture.Pages
         /// <param name="direction">If Direction.Forward, loads image into next image object, otherwise loads image into previous image object.</param>
         private async void LoadImage(int index, Direction direction)
         {
-            using (IRandomAccessStream strImage = await images[index].Value.OpenAsync(FileAccessMode.Read, StorageOpenOptions.AllowReadersAndWriters))
+            BitmapImage bmpTemp = new BitmapImage(new Uri(images[index].Value.Path));
+            if (direction == Direction.Forward)
             {
-                BitmapImage bmpTemp = new BitmapImage();
-                bmpTemp.SetSource(strImage);
-                if (direction == Direction.Forward)
-                {
-                    // Update next image.
-                    imgNext.Source = bmpTemp;
-                }
-                else if (direction == Direction.Backward)
-                {
-                    // Update previous image.
-                    imgPrev.Source = bmpTemp;
-                }
+                // Update next image.
+                imgNext.Source = bmpTemp;
+            }
+            else if (direction == Direction.Backward)
+            {
+                // Update previous image.
+                imgPrev.Source = bmpTemp;
             }
         }
-
-        /*
-        /// <summary>
-        /// Loads the next image in a direction into a KeyValuePair that stores the Image object and its corresponding index in the list of image files available. 
-        /// </summary>
-        /// <param name="img"></param>
-        /// <param name="currIndex"></param>
-        private void LoadImage(ref KeyValuePair<int,Image> img, int currIndex, Direction direction)
-        {
-            int imagesChecked = 0;
-            int totalFiles = imageFiles.Count;  // Ensures that the loop will eventually exit.
-            while (imagesChecked < totalFiles && img.Value.Source == null)
-            {
-                imagesChecked++;    // Allows the loop to exit if we have iterated through all images and cannot find a next valid image.
-                BitmapImage bmp = new BitmapImage();
-                bmp.ImageFailed += (s, e) => (s as BitmapImage).UriSource = null;   // Not a valid image? Set source equal to null.
-                bmp.UriSource = new Uri(imageFiles[currIndex].Path);
-                // If ImageFailed event is fired off, move to the next image.
-                if (bmp.UriSource == null)
-                {
-                    // Move to next image in forward direction.
-                    if (direction == Direction.Forward)
-                    {
-                        currIndex = (currIndex + 1) % totalFiles;   // Circular forward loop.
-                    }
-                    else if (direction == Direction.Backward)
-                    {
-                        currIndex = ((currIndex - 1) + totalFiles) % totalFiles;   // Circular backward loop.
-                    }
-                }
-                else
-                {
-                    // Valid image. Load it into the Image file.
-                    img = new KeyValuePair<int, Image>(currIndex, new Image() { Source = bmp });    // Creates new reference to image with its corresponding index in the list.
-                }
-            }   // Exit while loop.
-        }
-        */
-
-        ///// <summary>
-        ///// Error thrown if an image cannot be opened.
-        ///// </summary>
-        ///// <param name="sender"></param>
-        ///// <param name="e"></param>
-        //private void Image_ImageFailed(object sender, ExceptionRoutedEventArgs e)
-        //{
-        //
-        //}
-        //
-        ///// <summary>
-        ///// An image was successfully opened.
-        ///// </summary>
-        //private void Image_ImageOpened(object sender, RoutedEventArgs e)
-        //{
-        //
-        //}
 
         /// <summary>
         /// User clicked the Previous Image button.
@@ -256,7 +179,7 @@ namespace WindowsSpotlightCapture.Pages
         {
             try
             {
-                System.Diagnostics.Process.Start(images[currIndex].Value.Path);
+                await Windows.System.Launcher.LaunchFileAsync(images[currIndex].Value);
             }
             catch (Exception exc)
             {
@@ -272,7 +195,8 @@ namespace WindowsSpotlightCapture.Pages
         {
             try
             {
-                await images[currIndex].Value.CopyAsync(Configuration.SavedPhotosDirectory, images[currIndex].Value.Name, NameCollisionOption.ReplaceExisting);
+                StorageFolder tskFolder = await StorageFolder.GetFolderFromPathAsync((string)Windows.Storage.ApplicationData.Current.LocalSettings.Values["saveDir"]);
+                await images[currIndex].Value.CopyAsync(tskFolder, images[currIndex].Value.Name, NameCollisionOption.ReplaceExisting);
             }
             catch (Exception exc)
             {
@@ -282,11 +206,20 @@ namespace WindowsSpotlightCapture.Pages
         }   // Close btnSave_Click().
 
         /// <summary>
-        /// User clicked the Share Image button.
+        /// User clicked the Email button in the Share button's flyout menu.
         /// </summary>
-        private void btnShare_Click(object sender, RoutedEventArgs e)
+        private async void btnEmail_Click(object sender, RoutedEventArgs e)
         {
-
+            try
+            {
+                var emailMsg = new Windows.ApplicationModel.Email.EmailMessage();
+                await Windows.ApplicationModel.Email.EmailManager.ShowComposeNewEmailAsync(emailMsg);
+            }
+            catch (Exception exc)
+            {
+                Windows.UI.Popups.MessageDialog md = new Windows.UI.Popups.MessageDialog("We could not share this email via email. Please try again.\n\nError message: " + exc.Message, (exc.GetType()).Name + " - Could Not Save Image");
+                await md.ShowAsync();
+            }
         }   // Close btnShare_Click().
     }
 }

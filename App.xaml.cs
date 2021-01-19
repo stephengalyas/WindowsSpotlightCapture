@@ -90,10 +90,13 @@ namespace WindowsSpotlightCapture
         /// </summary>
         /// <param name="sender">The source of the suspend request.</param>
         /// <param name="e">Details about the suspend request.</param>
-        private void OnSuspending(object sender, SuspendingEventArgs e)
+        private async void OnSuspending(object sender, SuspendingEventArgs e)
         {
             var deferral = e.SuspendingOperation.GetDeferral();
-            //TODO: Save application state and stop any background activity
+            if (Objects.LogHandler.Initialized && (bool)((Windows.Storage.ApplicationData.Current.LocalSettings.Values["logging"] as Windows.Storage.ApplicationDataCompositeValue)["enabled"]) == true)
+            {
+                await Objects.LogHandler.Close();
+            }
             deferral.Complete();
         }
     }
