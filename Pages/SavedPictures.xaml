@@ -1,0 +1,82 @@
+﻿<Page Loaded="SavedPictures_Loaded"
+    x:Class="WindowsSpotlightCapture.Pages.SavedPictures"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WindowsSpotlightCapture.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <!-- For buttons -->
+            <ColumnDefinition Width="10*" />
+            <!-- For main content -->
+            <ColumnDefinition Width="1*" />
+            <!-- For buttons -->
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <!-- Top label -->
+            <RowDefinition Height="3*" />
+            <!-- Picture viewer -->
+            <RowDefinition Height="15*" />
+            <!-- Picture viewer commands -->
+            <RowDefinition Height="3*" />
+            <!-- Footer controls -->
+            <RowDefinition Height="3*" />
+        </Grid.RowDefinitions>
+        <TextBlock Name="tbHeader" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Text="Saved Photos" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="42" />
+        <Button Name="btnPrev" Grid.Row="1" Grid.Column="0" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="60" Height="60" CornerRadius="100" Margin="0,0,10,10" ToolTipService.ToolTip="View previous photo" Click="btnPrev_Click">
+            <SymbolIcon Symbol="Back"/>
+        </Button>
+        <Image Name="imgViewer" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+        <Button Name="btnNext" Grid.Row="1" Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Left" Width="60" Height="60" CornerRadius="100" Margin="10,0,0,10" ToolTipService.ToolTip="View next photo" Click="btnNext_Click">
+            <SymbolIcon Symbol="Next"/>
+        </Button>
+        <Grid Grid.Row="2" Grid.Column="1">
+            <!-- Inner grid for image controls, column widths will be percentages-->
+            <Grid.Resources>
+                <SolidColorBrush x:Key="brush" Color="Black"/>
+            </Grid.Resources>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.33*"/>
+                <ColumnDefinition Width="0.34*"/>
+                <ColumnDefinition Width="0.33*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Grid.Column="0"  BorderBrush="{StaticResource brush}" BorderThickness="1,1,0,1">
+                <Button Name="btnOpen" Grid.Row="0" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Open image in Photos app" Click="btnOpen_Click">
+                    <SymbolIcon Symbol="OpenLocal"/>
+                </Button>
+            </Border>
+            <Border Grid.Row="0" Grid.Column="1"  BorderBrush="{StaticResource brush}" BorderThickness="1,1,0,1">
+                <Button Name="btnDelete" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Delete image" Click="btnDelete_Click">
+                    <SymbolIcon Symbol="Delete"></SymbolIcon>
+                </Button>
+            </Border>
+            <Border Grid.Row="0" Grid.Column="2"  BorderBrush="{StaticResource brush}" BorderThickness="1,1,1,1">
+                <Button Name="btnMenu" Grid.Row="0" Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Width="60" Height="60" CornerRadius="100" ToolTipService.ToolTip="Share image">
+                    <SymbolIcon Symbol="Share" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Email" Click="btnEmail_Click" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                    <!--
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel>
+                            <HyperlinkButton Content="Email" Click="btnEmail_Click" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+                -->
+                </Button>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>
